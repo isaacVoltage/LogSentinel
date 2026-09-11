@@ -25,10 +25,12 @@ def post_log(raw_msg: str, severity: str, component: str):
 
 def fetch_live_windows_events(max_events: int = 30):
     """
-    Fetches live Windows System, Application, and PowerShell event logs using PowerShell Get-WinEvent.
+    Fetches live Windows System and Application event logs using PowerShell Get-WinEvent.
+    Excludes PowerShell self-startup log telemetry to prevent loop feedback.
     """
     ps_cmd = (
-        "Get-WinEvent -LogName System,Application,'Windows PowerShell' -MaxEvents 30 -ErrorAction SilentlyContinue | "
+        "Get-WinEvent -LogName System,Application -MaxEvents 30 -ErrorAction SilentlyContinue | "
+        "Where-Object { $_.ProviderName -notlike '*PowerShell*' } | "
         "Select-Object TimeCreated, ProviderName, LevelDisplayName, Message | "
         "ConvertTo-Json"
     )
