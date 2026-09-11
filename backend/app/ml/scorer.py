@@ -105,8 +105,8 @@ class RiskScorer:
             # Explicit error / critical log: high risk (75 - 100)
             risk_score = round(float(np.clip(75.0 + base_risk * 0.6, 75.0, 100.0)), 1)
         elif sev_upper in ["WARN", "WARNING"] or has_warning_keyword:
-            # Warning log: medium risk (45 - 65)
-            risk_score = round(float(np.clip(45.0 + base_risk * 0.5, 45.0, 68.0)), 1)
+            # Warning log: medium risk (55 - 72)
+            risk_score = round(float(np.clip(55.0 + base_risk * 0.5, 55.0, 72.0)), 1)
         else:
             # Normal INFO log: low risk (5 - 35)
             risk_score = round(float(np.clip(base_risk, 5.0, 38.0)), 1)

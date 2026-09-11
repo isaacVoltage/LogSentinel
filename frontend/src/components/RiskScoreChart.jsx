@@ -15,7 +15,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     const score = data.score;
-    const isAnomaly = score >= 75;
+    const isAnomaly = score >= 55;
 
     return (
       <div className="glass-panel p-3 rounded-lg border border-gray-700 shadow-xl text-xs font-mono">
@@ -54,7 +54,7 @@ export default function RiskScoreChart({ data }) {
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-0.5 bg-cyber-red" />
-            <span className="text-cyber-red font-semibold">Threshold (75.0)</span>
+            <span className="text-cyber-red font-semibold">Threshold (55.0)</span>
           </div>
         </div>
       </div>
@@ -82,11 +82,11 @@ export default function RiskScoreChart({ data }) {
               <YAxis domain={[0, 100]} stroke="#4B5563" tick={{ fontSize: 10, fill: '#9CA3AF' }} />
               <Tooltip content={<CustomTooltip />} />
               <ReferenceLine 
-                y={75} 
+                y={55} 
                 stroke="#FF0055" 
                 strokeDasharray="4 4" 
                 strokeWidth={2} 
-                label={{ value: 'CRITICAL THRESHOLD', fill: '#FF0055', fontSize: 10, position: 'top' }} 
+                label={{ value: 'CRITICAL THRESHOLD (55.0)', fill: '#FF0055', fontSize: 10, position: 'top' }} 
               />
               <Area
                 type="monotone"

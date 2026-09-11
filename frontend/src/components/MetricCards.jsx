@@ -61,7 +61,7 @@ export default function MetricCards({ metrics, isConnected }) {
         </div>
         <div className="mt-2 text-xs text-gray-400 flex justify-between">
           <span>ML Threshold:</span>
-          <span className="font-mono text-cyber-red">75.0</span>
+          <span className="font-mono text-cyber-red">55.0</span>
         </div>
       </div>
 

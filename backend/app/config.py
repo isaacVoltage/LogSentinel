@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     
     # ML & Anomaly Detection Parameters
     WINDOW_SIZE: int = 10
-    RISK_THRESHOLD: float = 75.0
+    RISK_THRESHOLD: float = 55.0
     ALERT_COOLDOWN_SECONDS: int = 30
     
     # Drain3 Persistence
