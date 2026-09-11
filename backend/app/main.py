@@ -339,6 +339,17 @@ async def get_false_positive_rules(db: AsyncSession = Depends(get_db)):
     rules = result.scalars().all()
     return rules
 
+@app.delete("/api/feedback/rules/clear/all")
+async def clear_all_false_positive_rules(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(FalsePositiveRule))
+    rules = result.scalars().all()
+    count = len(rules)
+    for r in rules:
+        await db.delete(r)
+    await db.commit()
+    scorer_instance.false_positive_rules.clear()
+    return {"message": f"Successfully cleared all {count} False Positive rules."}
+
 @app.delete("/api/feedback/rules/{template_id}")
 async def delete_false_positive_rule(template_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(FalsePositiveRule).where(FalsePositiveRule.template_id == template_id))

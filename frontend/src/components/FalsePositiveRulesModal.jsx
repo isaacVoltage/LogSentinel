@@ -43,6 +43,19 @@ export default function FalsePositiveRulesModal({ isOpen, onClose }) {
     }
   };
 
+  const handleClearAllRules = async () => {
+    try {
+      const res = await fetch('/api/feedback/rules/clear/all', {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setRules([]);
+      }
+    } catch (err) {
+      console.error('Error clearing all False Positive rules:', err);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -82,14 +95,26 @@ export default function FalsePositiveRulesModal({ isOpen, onClose }) {
               <ShieldCheck className="w-4 h-4 text-amber-400" />
               <span>Active Scoring Multiplier: <strong className="text-amber-300">0.25x (75% Risk Dampening)</strong></span>
             </div>
-            <button
-              onClick={fetchRules}
-              disabled={loading}
-              className="px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 flex items-center gap-1.5 text-[11px] transition-all"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
+            <div className="flex items-center gap-2">
+              {rules.length > 0 && (
+                <button
+                  onClick={handleClearAllRules}
+                  className="px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 flex items-center gap-1 text-[11px] font-bold transition-all"
+                  title="Clear all active false positive dampening rules"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Clear All Rules
+                </button>
+              )}
+              <button
+                onClick={fetchRules}
+                disabled={loading}
+                className="px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 flex items-center gap-1.5 text-[11px] transition-all"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
           </div>
 
           {rules.length === 0 ? (
