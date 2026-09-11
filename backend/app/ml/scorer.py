@@ -99,22 +99,19 @@ class RiskScorer:
 
         # Compute dynamic base risk from PyTorch reconstruction error & loss variance
         loss_variance = float(np.std(per_token_losses)) if len(per_token_losses) > 1 else 0.5
-        
-        # High ML reconstruction error or sequence order variance triggers sequence anomaly boost
-        is_ml_sequence_anomaly = avg_reconstruction_error >= 1.5 or loss_variance >= 1.0
+        dynamic_loss_factor = (avg_reconstruction_error * 6.5) + (loss_variance * 8.0)
 
-        if sev_upper in ["ERROR", "CRITICAL", "FATAL"] or has_error_keyword or is_ml_sequence_anomaly:
-            # Explicit error / critical log OR high ML sequence reconstruction loss: (78 - 100)
-            ml_boost = (avg_reconstruction_error * 8.0) + (loss_variance * 10.0)
-            risk_score = round(float(np.clip(78.0 + ml_boost, 78.0, 100.0)), 1)
+        if sev_upper in ["ERROR", "CRITICAL", "FATAL"] or has_error_keyword:
+            # Explicit error / critical log: high risk (78 - 100)
+            risk_score = round(float(np.clip(78.0 + dynamic_loss_factor * 0.5, 78.0, 100.0)), 1)
         elif sev_upper in ["WARN", "WARNING"] or has_warning_keyword:
             # Warning log: medium risk (58 - 75)
-            risk_score = round(float(np.clip(58.0 + avg_reconstruction_error * 6.0, 58.0, 75.0)), 1)
+            risk_score = round(float(np.clip(58.0 + dynamic_loss_factor * 0.4, 58.0, 75.0)), 1)
         else:
-            # Normal benign INFO log: (10.0 - 45.0)
+            # Normal INFO log: dynamic fluctuating risk (8.0 - 48.0) based on message & loss
             msg_hash = sum(ord(c) for c in raw_message[:30]) if raw_message else 15
-            raw_base = 12.0 + (avg_reconstruction_error * 5.0) + (msg_hash % 12)
-            risk_score = round(float(np.clip(raw_base, 10.0, 45.0)), 1)
+            raw_base = 12.0 + (dynamic_loss_factor % 20.0) + (msg_hash % 15)
+            risk_score = round(float(np.clip(raw_base, 8.0, 48.0)), 1)
 
         # Apply False Positive Dampening if any template in the sequence window has a feedback rule
         matched_dampeners = [
