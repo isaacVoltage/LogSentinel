@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, RefreshCw, AlertTriangle, Cpu, Activity, PlayCircle, Download, FileSpreadsheet, FileText, CheckCircle2, AlertCircle, ThumbsDown } from 'lucide-react';
-import MetricCards from './components/MetricCards';
+import { Routes, Route, NavLink } from 'react-router-dom';
+import { Shield, LayoutDashboard, Terminal, ShieldAlert, Sliders, AlertTriangle, AlertCircle } from 'lucide-react';
 
-import RiskScoreChart from './components/RiskScoreChart';
-import LiveLogFeed from './components/LiveLogFeed';
+import DashboardPage from './pages/DashboardPage';
+import LiveLogsPage from './pages/LiveLogsPage';
+import AnomaliesPage from './pages/AnomaliesPage';
+import SettingsPage from './pages/SettingsPage';
+
 import AnomalyDetailModal from './components/AnomalyDetailModal';
-import ComparisonPanel from './components/ComparisonPanel';
 import AttackScenarioInjector from './components/AttackScenarioInjector';
 import FalsePositiveRulesModal from './components/FalsePositiveRulesModal';
 
@@ -173,103 +175,103 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen pb-12">
-      {/* Top Navbar */}
-      <header className="glass-panel sticky top-0 z-40 border-b border-gray-800 bg-dark-900/90 px-6 py-4">
+    <div className="min-h-screen pb-12 bg-dark-950 text-gray-100 font-sans">
+      {/* Top Header Navbar */}
+      <header className="glass-panel sticky top-0 z-40 border-b border-gray-800 bg-dark-900/90 backdrop-blur-md px-6 py-3.5">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
           {/* Logo & Title */}
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-tr from-cyber-blue to-cyber-purple text-dark-900 font-bold shadow-lg shadow-cyber-blue/20">
+            <div className="p-2 rounded-xl bg-gradient-to-tr from-cyber-blue to-cyber-purple text-dark-900 font-bold shadow-lg shadow-cyber-blue/20">
               <Shield className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white tracking-wide flex items-center gap-2">
+              <h1 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
                 LogSentinel
-                <span className="text-xs font-mono px-2 py-0.5 rounded bg-cyber-blue/10 text-cyber-blue border border-cyber-blue/30 font-normal">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyber-blue/10 text-cyber-blue border border-cyber-blue/30 font-normal">
                   v1.0 AI-Driven
                 </span>
               </h1>
-              <p className="text-xs text-gray-400 font-mono">
-                Real-Time Drain3 Log Parser & PyTorch LSTM Anomaly Detector
+              <p className="text-[11px] text-gray-400 font-mono">
+                Drain3 Parser & PyTorch LSTM Anomaly Detector
               </p>
             </div>
           </div>
 
-          {/* Controls & Connection Status */}
+          {/* Navigation Links */}
+          <nav className="flex items-center gap-1 bg-dark-950/80 p-1 rounded-xl border border-gray-800/80">
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-2 transition-all ${
+                  isActive
+                    ? 'bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/40 font-bold shadow-sm'
+                    : 'text-gray-400 hover:text-white hover:bg-dark-900'
+                }`
+              }
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>Dashboard</span>
+            </NavLink>
+
+            <NavLink
+              to="/logs"
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-2 transition-all ${
+                  isActive
+                    ? 'bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/40 font-bold shadow-sm'
+                    : 'text-gray-400 hover:text-white hover:bg-dark-900'
+                }`
+              }
+            >
+              <Terminal className="w-3.5 h-3.5" />
+              <span>Live Console</span>
+            </NavLink>
+
+            <NavLink
+              to="/anomalies"
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-2 transition-all ${
+                  isActive
+                    ? 'bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/40 font-bold shadow-sm'
+                    : 'text-gray-400 hover:text-white hover:bg-dark-900'
+                }`
+              }
+            >
+              <ShieldAlert className="w-3.5 h-3.5" />
+              <span>Threat Analysis</span>
+            </NavLink>
+
+            <NavLink
+              to="/settings"
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-2 transition-all ${
+                  isActive
+                    ? 'bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/40 font-bold shadow-sm'
+                    : 'text-gray-400 hover:text-white hover:bg-dark-900'
+                }`
+              }
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Settings</span>
+            </NavLink>
+          </nav>
+
+          {/* Controls & Connection Indicator */}
           <div className="flex items-center gap-3">
-            {/* Attack Scenario Injector */}
             <AttackScenarioInjector onAttackTriggered={handleAttackTriggered} />
 
-            {/* Export CSV Button */}
-            <a
-              href="/api/dataset/export/csv"
-              download="hdfs_logs.csv"
-              className="px-3 py-1.5 rounded-xl border border-cyber-blue/40 bg-cyber-blue/10 hover:bg-cyber-blue/20 text-cyber-blue text-xs font-mono flex items-center gap-1.5 transition-all shadow-sm"
-              title="Download real HDFS log dataset as CSV file"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Export CSV</span>
-            </a>
-
-            {/* Export Excel Button */}
-            <a
-              href="/api/dataset/export/excel"
-              download="hdfs_logs.xlsx"
-              className="px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-mono flex items-center gap-1.5 transition-all shadow-sm"
-              title="Download real HDFS log dataset as Excel file"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Export Excel</span>
-            </a>
-
-            {/* Export Forensic PDF Audit Report Button */}
-            <a
-              href="/api/reports/forensic-pdf"
-              download="logsentinel_forensic_audit_report.pdf"
-              className="px-3 py-1.5 rounded-xl border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-mono flex items-center gap-1.5 transition-all shadow-sm font-bold"
-              title="Download SecOps Forensic Audit & Incident PDF Report"
-            >
-              <Download className="w-3.5 h-3.5 text-red-400" />
-              <span>Export PDF</span>
-            </a>
-
-            {/* Retrain Button */}
-            <button
-              onClick={handleTrainModel}
-              disabled={isTraining}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-mono flex items-center gap-2 transition-all ${
-                isTraining
-                  ? 'bg-cyber-purple/20 border-cyber-purple text-cyber-purple animate-pulse'
-                  : 'bg-gray-800 hover:bg-gray-700 border-gray-700 text-gray-200'
-              }`}
-            >
-              <Cpu className={`w-3.5 h-3.5 ${isTraining ? 'animate-spin' : ''}`} />
-              {isTraining ? 'Retraining...' : 'Retrain Model'}
-            </button>
-
-            {/* FP Rules Manager Button */}
-            <button
-              onClick={() => setIsRulesOpen(true)}
-              className="px-3 py-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-mono flex items-center gap-1.5 transition-all shadow-sm"
-              title="Manage Active Learning False Positive Dampening Rules"
-            >
-              <ThumbsDown className="w-3.5 h-3.5 text-amber-400" />
-              <span>FP Rules</span>
-            </button>
-
-            {/* Connection Indicator */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-dark-900 border border-gray-800 text-xs font-mono">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-dark-950 border border-gray-800 text-xs font-mono">
               <span className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-cyber-green animate-pulse' : 'bg-red-500'}`} />
               <span className={isConnected ? 'text-cyber-green font-bold' : 'text-red-400'}>
-                {isConnected ? 'STREAM CONNECTED' : 'OFFLINE'}
+                {isConnected ? 'STREAM ONLINE' : 'OFFLINE'}
               </span>
             </div>
           </div>
-
         </div>
       </header>
 
-      {/* Main Container */}
+      {/* Main Container with Page Routes */}
       <main className="max-w-7xl mx-auto px-6 pt-6">
         {/* Attack Injection Toast Banner */}
         {attackToast && (
@@ -332,24 +334,54 @@ export default function App() {
           </div>
         )}
 
-        {/* 1. Metric Cards */}
-        <MetricCards metrics={metrics} isConnected={isConnected} />
-
-        {/* 2. Risk Score Chart */}
-        <RiskScoreChart data={chartData} />
-
-        {/* 3. Live Log Console Feed */}
-        <LiveLogFeed
-          logs={logs}
-          onSelectAnomaly={setSelectedAnomaly}
-          onClearLogs={() => setLogs([])}
-        />
-
-
-        {/* 4. Sequence Comparison Panel */}
-        <div className="mt-6">
-          <ComparisonPanel latestAnomaly={anomalies.length > 0 ? anomalies[0] : null} />
-        </div>
+        {/* Page Routes */}
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <DashboardPage
+                metrics={metrics}
+                isConnected={isConnected}
+                chartData={chartData}
+                logs={logs}
+                anomalies={anomalies}
+                onSelectAnomaly={setSelectedAnomaly}
+              />
+            }
+          />
+          <Route
+            path="/logs"
+            element={
+              <LiveLogsPage
+                logs={logs}
+                onSelectAnomaly={setSelectedAnomaly}
+                onClearLogs={() => setLogs([])}
+              />
+            }
+          />
+          <Route
+            path="/anomalies"
+            element={
+              <AnomaliesPage
+                anomalies={anomalies}
+                onSelectAnomaly={setSelectedAnomaly}
+                onAcknowledge={handleAcknowledge}
+              />
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <SettingsPage
+                isTraining={isTraining}
+                handleTrainModel={handleTrainModel}
+                setIsRulesOpen={setIsRulesOpen}
+                isConnected={isConnected}
+                metrics={metrics}
+              />
+            }
+          />
+        </Routes>
       </main>
 
       {/* Anomaly Detail Inspection Modal */}

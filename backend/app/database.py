@@ -35,6 +35,18 @@ async def get_db():
         finally:
             await session.close()
 
+from sqlalchemy import text
+
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Auto-migration for missing columns in anomaly_records
+        try:
+            await conn.execute(text("ALTER TABLE anomaly_records ADD COLUMN acknowledged_at DATETIME"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE anomaly_records ADD COLUMN feedback_notes TEXT"))
+        except Exception:
+            pass
+
