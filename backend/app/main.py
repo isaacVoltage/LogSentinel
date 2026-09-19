@@ -21,7 +21,8 @@ from app.schemas import (
     AnomalyRecordResponse, AnomalyAcknowledgeResponse,
     MetricsResponse, WebSocketMessage,
     AttackSimulationRequest, AttackSimulationResponse,
-    AnomalyFeedbackRequest, FalsePositiveRuleResponse
+    AnomalyFeedbackRequest, FalsePositiveRuleResponse,
+    AlertConfigSchema, TestWebhookRequest, TestEmailRequest, TestAlertResponse
 )
 from app.pipeline.parser import parser_instance
 from app.pipeline.windowing import windowing_instance
@@ -717,4 +718,78 @@ async def load_real_dataset_into_db(
         "ingested_count": ingested_count,
         "anomalies_detected": anomaly_count
     }
+
+# SecOps Alert Notification Channels Endpoints
+@app.get("/api/alerts/config", response_model=AlertConfigSchema)
+async def get_alert_config():
+    return AlertConfigSchema(
+        webhook_enabled=notifier_instance.webhook_enabled,
+        webhook_url=notifier_instance.webhook_url,
+        webhook_provider=notifier_instance.webhook_provider,
+        email_enabled=notifier_instance.email_enabled,
+        smtp_host=notifier_instance.smtp_host,
+        smtp_port=notifier_instance.smtp_port,
+        smtp_user=notifier_instance.smtp_user,
+        smtp_password=notifier_instance.smtp_password,
+        alert_email_recipient=notifier_instance.alert_email_recipient
+    )
+
+@app.post("/api/alerts/config", response_model=AlertConfigSchema)
+async def update_alert_config(payload: AlertConfigSchema):
+    notifier_instance.update_config(payload.dict())
+    return await get_alert_config()
+
+@app.post("/api/alerts/test/webhook", response_model=TestAlertResponse)
+async def test_webhook_alert(payload: TestWebhookRequest):
+    success = await notifier_instance.dispatch_webhook(
+        title="🧪 LogSentinel Test Webhook Alert",
+        message="This is a test notification from LogSentinel AI SecOps Platform. Your Webhook channel is working correctly!",
+        risk_score=92.5,
+        root_cause_chain=[
+            {"raw_message": "TEST_ALERT: System test dispatch trigger", "contribution_percentage": 100.0}
+        ],
+        override_url=payload.webhook_url,
+        override_provider=payload.webhook_provider
+    )
+    if success:
+        return TestAlertResponse(
+            success=True,
+            message=f"Test alert delivered successfully to {payload.webhook_provider.upper()} Webhook!",
+            timestamp=datetime.datetime.utcnow()
+        )
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to deliver Webhook payload. Please verify URL and network connectivity."
+        )
+
+@app.post("/api/alerts/test/email", response_model=TestAlertResponse)
+async def test_email_alert(payload: TestEmailRequest):
+    success = await notifier_instance.dispatch_email(
+        subject="🧪 [TEST ALERT] LogSentinel SecOps Email Dispatch",
+        risk_score=88.0,
+        anomaly_id=999,
+        root_cause_chain=[
+            {"raw_message": "TEST_ALERT: SMTP Email Dispatch Test", "contribution_percentage": 100.0}
+        ],
+        override_smtp={
+            "smtp_host": payload.smtp_host,
+            "smtp_port": payload.smtp_port,
+            "smtp_user": payload.smtp_user,
+            "smtp_password": payload.smtp_password,
+            "recipient": payload.recipient
+        }
+    )
+    if success:
+        return TestAlertResponse(
+            success=True,
+            message=f"Test HTML incident report email delivered successfully to {payload.recipient}!",
+            timestamp=datetime.datetime.utcnow()
+        )
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to send test email via SMTP. Check SMTP credentials, port, and security settings."
+        )
+
 

@@ -96,3 +96,32 @@ class AttackSimulationResponse(BaseModel):
     message: str
     timestamp: datetime.datetime
 
+# Alert Notification Schemas
+class AlertConfigSchema(BaseModel):
+    webhook_enabled: bool = False
+    webhook_url: Optional[str] = ""
+    webhook_provider: str = "discord" # discord, slack, generic
+    email_enabled: bool = False
+    smtp_host: Optional[str] = "smtp.gmail.com"
+    smtp_port: Optional[int] = 587
+    smtp_user: Optional[str] = ""
+    smtp_password: Optional[str] = ""
+    alert_email_recipient: Optional[str] = ""
+
+class TestWebhookRequest(BaseModel):
+    webhook_url: str
+    webhook_provider: Optional[str] = "discord"
+
+class TestEmailRequest(BaseModel):
+    smtp_host: str
+    smtp_port: int = 587
+    smtp_user: str
+    smtp_password: str
+    recipient: str
+
+class TestAlertResponse(BaseModel):
+    success: bool
+    message: str
+    timestamp: datetime.datetime
+
+

@@ -22,11 +22,24 @@ class Settings(BaseSettings):
     DRAIN3_STATE_PATH: str = "./drain3_state.bin"
     MODEL_WEIGHTS_PATH: str = "./models/lstm_autoencoder.pt"
     
+    # Notification Settings
+    WEBHOOK_ENABLED: bool = os.getenv("WEBHOOK_ENABLED", "false").lower() in ("true", "1", "t")
+    WEBHOOK_URL: str = os.getenv("WEBHOOK_URL", "")
+    WEBHOOK_PROVIDER: str = os.getenv("WEBHOOK_PROVIDER", "discord") # discord, slack, generic
+    
+    EMAIL_ENABLED: bool = os.getenv("EMAIL_ENABLED", "false").lower() in ("true", "1", "t")
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER: str = os.getenv("SMTP_USER", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    ALERT_EMAIL_RECIPIENT: str = os.getenv("ALERT_EMAIL_RECIPIENT", "secops-alerts@logsentinel.com")
+
     # CORS Origins
     CORS_ORIGINS: list[str] = ["*"]
 
     class Config:
         case_sensitive = True
         env_file = ".env"
+
 
 settings = Settings()
