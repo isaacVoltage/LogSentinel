@@ -12,6 +12,10 @@ from reportlab.platypus import (
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
+from reportlab.graphics.shapes import Drawing, Rect, String, Group
+from reportlab.graphics.charts.barcharts import VerticalBarChart
+from reportlab.graphics.charts.piecharts import Pie
+
 from app.models import LogEntry, AnomalyRecord, FalsePositiveRule
 
 async def generate_forensic_pdf_report(db: AsyncSession) -> io.BytesIO:
@@ -26,6 +30,26 @@ async def generate_forensic_pdf_report(db: AsyncSession) -> io.BytesIO:
         select(func.count(AnomalyRecord.id)).where(AnomalyRecord.is_acknowledged == False)
     )
     active_anomalies = active_anomalies_res.scalar() or 0
+
+    # Severity distribution
+    info_res = await db.execute(select(func.count(LogEntry.id)).where(LogEntry.severity == "INFO"))
+    info_count = info_res.scalar() or 0
+
+    warn_res = await db.execute(select(func.count(LogEntry.id)).where(LogEntry.severity.in_(["WARN", "WARNING"])))
+    warn_count = warn_res.scalar() or 0
+
+    error_res = await db.execute(select(func.count(LogEntry.id)).where(LogEntry.severity.in_(["ERROR", "FATAL", "CRITICAL"])))
+    error_count = error_res.scalar() or 0
+
+    # Risk Distribution
+    risk_normal_res = await db.execute(select(func.count(LogEntry.id)).where(LogEntry.risk_score < 50.0))
+    risk_normal = risk_normal_res.scalar() or 0
+
+    risk_elevated_res = await db.execute(select(func.count(LogEntry.id)).where((LogEntry.risk_score >= 50.0) & (LogEntry.risk_score < 75.0)))
+    risk_elevated = risk_elevated_res.scalar() or 0
+
+    risk_critical_res = await db.execute(select(func.count(LogEntry.id)).where(LogEntry.risk_score >= 75.0))
+    risk_critical = risk_critical_res.scalar() or 0
 
     anomalies_res = await db.execute(
         select(AnomalyRecord).order_by(desc(AnomalyRecord.timestamp)).limit(25)
@@ -142,8 +166,52 @@ async def generate_forensic_pdf_report(db: AsyncSession) -> io.BytesIO:
     story.append(kpi_table)
     story.append(Spacer(1, 15))
 
+    # Visual Threat & Severity Analytics Chart Section
+    story.append(Paragraph("1. Graphical Threat Analytics & Risk Distribution", h2_style))
+
+    # Create ReportLab Bar Chart for Risk Spectrum
+    drawing = Drawing(540, 160)
+
+    # Risk Distribution Bar Chart
+    bc = VerticalBarChart()
+    bc.x = 45
+    bc.y = 25
+    bc.height = 110
+    bc.width = 210
+    bc.data = [[risk_normal, risk_elevated, risk_critical]]
+    bc.categoryAxis.categoryNames = ['Normal (<50)', 'Elevated (50-75)', 'Critical (>=75)']
+    bc.categoryAxis.labels.fontSize = 7
+    bc.valueAxis.valueMin = 0
+    max_val = max(risk_normal, risk_elevated, risk_critical, 10)
+    bc.valueAxis.valueMax = int(max_val * 1.2)
+    bc.bars[0].fillColor = colors.HexColor("#2563EB")
+
+    drawing.add(bc)
+
+    # Pie Chart for Log Severity Distribution
+    pc = Pie()
+    pc.x = 310
+    pc.y = 25
+    pc.width = 110
+    pc.height = 110
+    total_sev = max(info_count + warn_count + error_count, 1)
+    pc.data = [info_count, warn_count, error_count]
+    pc.labels = [
+        f"INFO ({info_count})",
+        f"WARN ({warn_count})",
+        f"CRITICAL ({error_count})"
+    ]
+    pc.sideLabels = 1
+    pc.slices[0].fillColor = colors.HexColor("#3B82F6")
+    pc.slices[1].fillColor = colors.HexColor("#F59E0B")
+    pc.slices[2].fillColor = colors.HexColor("#EF4444")
+
+    drawing.add(pc)
+    story.append(drawing)
+    story.append(Spacer(1, 15))
+
     # Forensic Anomaly Table
-    story.append(Paragraph("1. Flagged Forensic Incident Records (Recent 25)", h2_style))
+    story.append(Paragraph("2. Flagged Forensic Incident Records (Recent 25)", h2_style))
     
     anomaly_rows = [[
         Paragraph("<b>ID</b>", cell_bold),
@@ -193,7 +261,7 @@ async def generate_forensic_pdf_report(db: AsyncSession) -> io.BytesIO:
     story.append(Spacer(1, 15))
 
     # Active False Positive Rules Section
-    story.append(Paragraph("2. Active Learning False Positive Dampening Rules", h2_style))
+    story.append(Paragraph("3. Active Learning False Positive Dampening Rules", h2_style))
     rule_rows = [[
         Paragraph("<b>Template ID</b>", cell_bold),
         Paragraph("<b>Dampening Factor</b>", cell_bold),
@@ -231,10 +299,10 @@ async def generate_forensic_pdf_report(db: AsyncSession) -> io.BytesIO:
     story.append(Spacer(1, 15))
 
     # SecOps Remediation & Audit Sign-Off
-    story.append(Paragraph("3. SecOps Incident Remediation & Recommendations", h2_style))
+    story.append(Paragraph("4. SecOps Incident Remediation & Recommendations", h2_style))
     rec_text = """
     • <b>P1 Critical Alerts (Risk Score >= 75.0):</b> Inspect sequence root-cause template errors and initiate automated pod/daemon restarts.<br/>
-    • <b>Active Learning Dampening:</b> Periodically review False Positive rules in Section 2 to ensure critical zero-day threats are not inadvertently suppressed.<br/>
+    • <b>Active Learning Dampening:</b> Periodically review False Positive rules in Section 3 to ensure critical zero-day threats are not inadvertently suppressed.<br/>
     • <b>Model Health:</b> Trigger LSTM Autoencoder retraining every 10,000 ingested log sequence blocks to adjust for shifting normal traffic baselines.
     """
     story.append(Paragraph(rec_text, cell_style))

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, NavLink } from 'react-router-dom';
-import { Shield, LayoutDashboard, Terminal, ShieldAlert, Sliders, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Shield, LayoutDashboard, Terminal, ShieldAlert, Sliders, AlertTriangle, AlertCircle, BarChart3 } from 'lucide-react';
 
 import DashboardPage from './pages/DashboardPage';
 import LiveLogsPage from './pages/LiveLogsPage';
 import AnomaliesPage from './pages/AnomaliesPage';
+import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
 
 import AnomalyDetailModal from './components/AnomalyDetailModal';
@@ -261,6 +262,20 @@ export default function App() {
             </NavLink>
 
             <NavLink
+              to="/analytics"
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-2 transition-all ${
+                  isActive
+                    ? 'bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/40 font-bold shadow-sm'
+                    : 'text-gray-400 hover:text-white hover:bg-dark-900'
+                }`
+              }
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>Analytics</span>
+            </NavLink>
+
+            <NavLink
               to="/settings"
               className={({ isActive }) =>
                 `px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-2 transition-all ${
@@ -385,6 +400,15 @@ export default function App() {
                 onSelectAnomaly={setSelectedAnomaly}
                 onAcknowledge={handleAcknowledge}
                 onClearAllAnomalies={handleClearAllAnomalies}
+              />
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <AnalyticsPage
+                chartData={chartData}
+                logs={logs}
               />
             }
           />
