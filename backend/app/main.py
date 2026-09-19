@@ -150,8 +150,8 @@ async def ingest_log(payload: LogIngestRequest, db: AsyncSession = Depends(get_d
     block_id = payload.block_id or "default"
     window_seq = windowing_instance.add_log(block_id, template_id, payload.raw_message)
     
-    # 3. Calculate sequence risk score using PyTorch LSTM Autoencoder
-    risk_score, root_cause_chain = scorer_instance.score_sequence(
+    # 3. Calculate sequence risk score using PyTorch LSTM Autoencoder & SHAP Explainer
+    risk_score, root_cause_chain, shap_summary = scorer_instance.score_sequence(
         window_seq, 
         severity=payload.severity, 
         raw_message=payload.raw_message
@@ -501,7 +501,7 @@ async def simulate_attack(payload: AttackSimulationRequest, db: AsyncSession = D
         window_seq = windowing_instance.add_log(block_id, template_id, raw_msg)
         
         # 3. Scorer
-        risk_score, root_cause = scorer_instance.score_sequence(
+        risk_score, root_cause, shap_summary = scorer_instance.score_sequence(
             window_seq,
             severity=severity,
             raw_message=raw_msg
@@ -690,7 +690,7 @@ async def load_real_dataset_into_db(
         template_id, _ = parser_instance.parse(item["raw_message"])
         block_id = item["block_id"]
         window_seq = windowing_instance.add_log(block_id, template_id, item["raw_message"])
-        risk_score, root_cause = scorer_instance.score_sequence(
+        risk_score, root_cause, shap_summary = scorer_instance.score_sequence(
             window_seq, 
             severity=item["severity"], 
             raw_message=item["raw_message"]

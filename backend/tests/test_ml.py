@@ -19,7 +19,8 @@ def test_risk_scorer():
     
     # Test scoring sequence
     normal_seq = [(1, "Normal msg 1"), (2, "Normal msg 2"), (3, "Normal msg 3")]
-    risk_score, root_cause = scorer.score_sequence(normal_seq)
+    risk_score, root_cause, shap_summary = scorer.score_sequence(normal_seq)
     
     assert 0.0 <= risk_score <= 100.0
     assert isinstance(root_cause, list)
+    assert "shap_attributions" in shap_summary

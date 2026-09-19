@@ -5,13 +5,15 @@ import numpy as np
 import logging
 from typing import List, Tuple, Dict, Any
 from app.ml.model import LSTMAutoencoder
+from app.ml.shap_explainer import SequenceSHAPExplainer
 
 logger = logging.getLogger("logsentinel.scorer")
 
 class RiskScorer:
     """
     RiskScorer uses the trained LSTM Autoencoder to score sequence reconstruction loss
-    and compute a normalized Risk Score (0-100). Also extracts root-cause sequence chains.
+    and compute a normalized Risk Score (0-100). 
+    Extracts root-cause sequence chains and computes SHAP feature attributions for Explainable AI (XAI).
     Supports active learning dampening via False Positive feedback rules.
     """
     def __init__(self, model_path: str = "./models/lstm_autoencoder.pt", vocab_size: int = 500, seq_len: int = 10):
@@ -23,6 +25,7 @@ class RiskScorer:
         self.is_loaded = False
         self.false_positive_rules: Dict[int, float] = {} # template_id -> dampening_factor
         self._load_model()
+        self.shap_explainer = SequenceSHAPExplainer(self.model, vocab_size=vocab_size, seq_len=seq_len)
 
     def _load_model(self):
         if os.path.exists(self.model_path):
@@ -54,13 +57,13 @@ class RiskScorer:
         sequence_window: List[Tuple[int, str]], 
         severity: str = "INFO", 
         raw_message: str = ""
-    ) -> Tuple[float, List[Dict[str, Any]]]:
+    ) -> Tuple[float, List[Dict[str, Any]], Dict[str, Any]]:
         """
-        Calculates 0-100 risk score and extracts root-cause sequence chain for given log sequence window.
-        sequence_window: list of (template_id, raw_message)
+        Calculates 0-100 risk score, extracts root-cause sequence chain, and computes SHAP feature attributions.
+        Returns: (risk_score, root_cause_chain, shap_summary)
         """
         if not sequence_window:
-            return 0.0, []
+            return 0.0, [], {"base_value": 18.0, "shap_attributions": []}
 
         template_ids = [item[0] % self.vocab_size for item in sequence_window]
         
@@ -131,7 +134,7 @@ class RiskScorer:
         root_cause_chain = []
         
         for idx, (tmpl_id, msg) in enumerate(raw_window):
-            if tmpl_id == 0:
+            if tmpl_id == 0 or tmpl_id == "<PADDING>":
                 continue # Skip padding
             err = per_token_losses[idx]
             contrib = (err / total_err) * 100.0
@@ -145,7 +148,14 @@ class RiskScorer:
         # Sort root cause items by highest error contribution descending
         root_cause_chain.sort(key=lambda x: x["reconstruction_error"], reverse=True)
 
-        return risk_score, root_cause_chain
+        # Compute SHAP Feature Attributions
+        base_val, shap_attributions = self.shap_explainer.compute_shap_values(sequence_window, risk_score)
+        shap_summary = {
+            "base_value": base_val,
+            "shap_attributions": shap_attributions
+        }
+
+        return risk_score, root_cause_chain, shap_summary
 
 
 # Global Scorer instance
