@@ -132,6 +132,24 @@ export default function App() {
           item.id === data.id ? { ...item, is_acknowledged: true, status: 'ACKNOWLEDGED' } : item
         )
       );
+    } else if (type === 'anomalies_cleared') {
+      setAnomalies([]);
+      setSelectedAnomaly(null);
+    }
+  };
+
+  const handleClearAllAnomalies = async () => {
+    try {
+      const res = await fetch('/api/anomalies/clear/all', {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setAnomalies([]);
+        setSelectedAnomaly(null);
+        fetchMetricsAndAnomalies();
+      }
+    } catch (err) {
+      console.error("Failed to clear anomalies:", err);
     }
   };
 
@@ -366,6 +384,7 @@ export default function App() {
                 anomalies={anomalies}
                 onSelectAnomaly={setSelectedAnomaly}
                 onAcknowledge={handleAcknowledge}
+                onClearAllAnomalies={handleClearAllAnomalies}
               />
             }
           />

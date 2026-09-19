@@ -8,7 +8,7 @@ from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconn
 from fastapi.responses import FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
+from sqlalchemy import select, func, desc, delete
 
 from app.config import settings
 from app.database import get_db, init_db
@@ -268,6 +268,23 @@ async def acknowledge_anomaly(anomaly_id: int, db: AsyncSession = Depends(get_db
         status="ACKNOWLEDGED",
         message=f"Anomaly #{anomaly_id} successfully acknowledged."
     )
+
+@app.delete("/api/anomalies/clear/all")
+async def clear_all_anomalies(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(delete(AnomalyRecord))
+    deleted_count = result.rowcount
+    await db.commit()
+
+    asyncio.create_task(ws_manager.broadcast({
+        "type": "anomalies_cleared",
+        "data": {"message": "All anomaly records cleared"}
+    }))
+
+    return {
+        "message": "Successfully cleared all anomaly records from database.",
+        "deleted_count": deleted_count
+    }
+
 
 @app.post("/api/anomalies/{anomaly_id}/feedback")
 async def submit_anomaly_feedback(

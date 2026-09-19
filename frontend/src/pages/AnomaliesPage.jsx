@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import ComparisonPanel from '../components/ComparisonPanel';
-import { ShieldAlert, AlertTriangle, CheckCircle2, Search, Eye } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, CheckCircle2, Search, Eye, Trash2 } from 'lucide-react';
 
-export default function AnomaliesPage({ anomalies, onSelectAnomaly, onAcknowledge }) {
+export default function AnomaliesPage({ anomalies, onSelectAnomaly, onAcknowledge, onClearAllAnomalies }) {
   const [filter, setFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -38,8 +38,8 @@ export default function AnomaliesPage({ anomalies, onSelectAnomaly, onAcknowledg
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-2">
+        {/* Filters & Actions */}
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setFilter('ALL')}
             className={`px-3 py-1.5 rounded-xl text-xs font-mono transition-all border ${
@@ -72,6 +72,18 @@ export default function AnomaliesPage({ anomalies, onSelectAnomaly, onAcknowledg
           >
             Unacknowledged
           </button>
+
+          {onClearAllAnomalies && (
+            <button
+              onClick={onClearAllAnomalies}
+              disabled={anomalies.length === 0}
+              className="px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center gap-1.5 disabled:opacity-40"
+              title="Clear all recorded anomalies from database"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clear All</span>
+            </button>
+          )}
         </div>
       </div>
 
