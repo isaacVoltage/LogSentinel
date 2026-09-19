@@ -255,68 +255,25 @@ export default function SettingsPage({
               </label>
             </div>
 
-            <div className="space-y-2 text-xs font-mono">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="col-span-2">
-                  <label className="text-gray-400 block mb-1">SMTP Host:</label>
-                  <input
-                    type="text"
-                    placeholder="smtp.gmail.com"
-                    value={alertConfig.smtp_host}
-                    onChange={(e) => setAlertConfig({ ...alertConfig, smtp_host: e.target.value })}
-                    className="w-full bg-dark-900 border border-gray-800 rounded-lg px-3 py-1.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-gray-400 block mb-1">Port:</label>
-                  <input
-                    type="number"
-                    placeholder="587"
-                    value={alertConfig.smtp_port}
-                    onChange={(e) => setAlertConfig({ ...alertConfig, smtp_port: e.target.value })}
-                    className="w-full bg-dark-900 border border-gray-800 rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-gray-400 block mb-1">SMTP User:</label>
-                  <input
-                    type="text"
-                    placeholder="alerts@domain.com"
-                    value={alertConfig.smtp_user}
-                    onChange={(e) => setAlertConfig({ ...alertConfig, smtp_user: e.target.value })}
-                    className="w-full bg-dark-900 border border-gray-800 rounded-lg px-3 py-1.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-gray-400 block mb-1">SMTP Password:</label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={alertConfig.smtp_password}
-                    onChange={(e) => setAlertConfig({ ...alertConfig, smtp_password: e.target.value })}
-                    className="w-full bg-dark-900 border border-gray-800 rounded-lg px-3 py-1.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-              </div>
-
+            <div className="space-y-3 text-xs font-mono">
               <div>
                 <label className="text-gray-400 block mb-1">SecOps Alert Recipient Email:</label>
                 <input
                   type="email"
-                  placeholder="secops-team@company.com"
+                  placeholder="secops-alerts@logsentinel.com"
                   value={alertConfig.alert_email_recipient}
                   onChange={(e) => setAlertConfig({ ...alertConfig, alert_email_recipient: e.target.value })}
-                  className="w-full bg-dark-900 border border-gray-800 rounded-lg px-3 py-1.5 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-dark-900 border border-gray-800 rounded-lg px-3.5 py-2 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 font-mono text-xs"
                 />
+                <p className="text-[11px] text-gray-500 mt-1">
+                  Alert notifications for critical anomalies (&ge; 75.0 risk score) will be sent to this email address.
+                </p>
               </div>
 
               <button
                 onClick={handleTestEmail}
-                disabled={testingEmail || !alertConfig.smtp_host || !alertConfig.alert_email_recipient}
-                className="w-full mt-1 py-2 px-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-mono flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                disabled={testingEmail || !alertConfig.alert_email_recipient}
+                className="w-full mt-2 py-2 px-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-mono flex items-center justify-center gap-2 transition-all disabled:opacity-50 font-bold"
               >
                 {testingEmail ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                 <span>{testingEmail ? 'Sending Test Email...' : 'Send Test HTML Email Alert'}</span>
