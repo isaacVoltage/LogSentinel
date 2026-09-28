@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Cpu, ThumbsDown, FileText, FileSpreadsheet, Download, Sliders, CheckCircle2, ShieldCheck, Activity, Bell, Send, Mail, Globe, Check, AlertCircle, Loader2 } from 'lucide-react';
+import AgentControlPanel from '../components/AgentControlPanel';
 
 export default function SettingsPage({
   isTraining,
@@ -8,17 +9,27 @@ export default function SettingsPage({
   isConnected,
   metrics
 }) {
-  // Alert Config State
-  const [alertConfig, setAlertConfig] = useState({
-    webhook_enabled: false,
-    webhook_url: '',
-    webhook_provider: 'discord',
-    email_enabled: false,
-    smtp_host: 'smtp.gmail.com',
-    smtp_port: 587,
-    smtp_user: '',
-    smtp_password: '',
-    alert_email_recipient: 'secops-alerts@logsentinel.com'
+  // Alert Config State with localStorage fallback
+  const [alertConfig, setAlertConfig] = useState(() => {
+    const cached = localStorage.getItem('logsentinel_alert_config');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {
+        // fallback
+      }
+    }
+    return {
+      webhook_enabled: false,
+      webhook_url: '',
+      webhook_provider: 'discord',
+      email_enabled: false,
+      smtp_host: 'smtp.gmail.com',
+      smtp_port: 587,
+      smtp_user: '',
+      smtp_password: '',
+      alert_email_recipient: 'prateekcapi@gmail.com'
+    };
   });
 
   const [savingAlerts, setSavingAlerts] = useState(false);
@@ -31,13 +42,17 @@ export default function SettingsPage({
     fetch('/api/alerts/config')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data) setAlertConfig(data);
+        if (data) {
+          setAlertConfig(data);
+          localStorage.setItem('logsentinel_alert_config', JSON.stringify(data));
+        }
       })
       .catch((err) => console.error('Error loading alert config:', err));
   }, []);
 
   const handleSaveAlertConfig = async (updatedConfig = alertConfig) => {
     setSavingAlerts(true);
+    localStorage.setItem('logsentinel_alert_config', JSON.stringify(updatedConfig));
     try {
       const res = await fetch('/api/alerts/config', {
         method: 'POST',
@@ -47,6 +62,7 @@ export default function SettingsPage({
       if (res.ok) {
         const data = await res.json();
         setAlertConfig(data);
+        localStorage.setItem('logsentinel_alert_config', JSON.stringify(data));
         setTestResult({ success: true, message: 'Alert notification settings saved successfully!' });
         setTimeout(() => setTestResult(null), 4000);
       }
@@ -202,7 +218,11 @@ export default function SettingsPage({
                 <label className="text-gray-400 block mb-1">Webhook Provider:</label>
                 <select
                   value={alertConfig.webhook_provider}
-                  onChange={(e) => setAlertConfig({ ...alertConfig, webhook_provider: e.target.value })}
+                  onChange={(e) => {
+                    const updated = { ...alertConfig, webhook_provider: e.target.value };
+                    setAlertConfig(updated);
+                    handleSaveAlertConfig(updated);
+                  }}
                   className="w-full bg-dark-900 border border-gray-800 rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-cyber-blue"
                 >
                   <option value="discord">Discord Webhook (Rich Embed)</option>
@@ -217,7 +237,12 @@ export default function SettingsPage({
                   type="url"
                   placeholder="https://discord.com/api/webhooks/... or https://hooks.slack.com/..."
                   value={alertConfig.webhook_url}
-                  onChange={(e) => setAlertConfig({ ...alertConfig, webhook_url: e.target.value })}
+                  onChange={(e) => {
+                    const updated = { ...alertConfig, webhook_url: e.target.value };
+                    setAlertConfig(updated);
+                    localStorage.setItem('logsentinel_alert_config', JSON.stringify(updated));
+                  }}
+                  onBlur={() => handleSaveAlertConfig()}
                   className="w-full bg-dark-900 border border-gray-800 rounded-lg px-3 py-1.5 text-white placeholder-gray-600 focus:outline-none focus:border-cyber-blue"
                 />
               </div>
@@ -260,9 +285,14 @@ export default function SettingsPage({
                 <label className="text-gray-400 block mb-1">SecOps Alert Recipient Email:</label>
                 <input
                   type="email"
-                  placeholder="secops-alerts@logsentinel.com"
+                  placeholder="prateekcapi@gmail.com"
                   value={alertConfig.alert_email_recipient}
-                  onChange={(e) => setAlertConfig({ ...alertConfig, alert_email_recipient: e.target.value })}
+                  onChange={(e) => {
+                    const updated = { ...alertConfig, alert_email_recipient: e.target.value };
+                    setAlertConfig(updated);
+                    localStorage.setItem('logsentinel_alert_config', JSON.stringify(updated));
+                  }}
+                  onBlur={() => handleSaveAlertConfig()}
                   className="w-full bg-dark-900 border border-gray-800 rounded-lg px-3.5 py-2 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 font-mono text-xs"
                 />
                 <p className="text-[11px] text-gray-500 mt-1">
@@ -382,6 +412,9 @@ export default function SettingsPage({
           </a>
         </div>
       </div>
+
+      {/* Live Host OS Collector Agent Settings */}
+      <AgentControlPanel />
 
       {/* Real-time Telemetry Status */}
       <div className="glass-panel p-5 rounded-2xl border border-gray-800 bg-dark-900/70 space-y-4">

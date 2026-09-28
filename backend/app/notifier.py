@@ -53,6 +53,83 @@ class AlertNotifier:
         if "alert_email_recipient" in config_dict:
             self.alert_email_recipient = str(config_dict["alert_email_recipient"])
 
+        # Sync global settings & process environment
+        settings.WEBHOOK_ENABLED = self.webhook_enabled
+        settings.WEBHOOK_URL = self.webhook_url
+        settings.WEBHOOK_PROVIDER = self.webhook_provider
+        settings.EMAIL_ENABLED = self.email_enabled
+        settings.SMTP_HOST = self.smtp_host
+        settings.SMTP_PORT = self.smtp_port
+        settings.SMTP_USER = self.smtp_user
+        settings.SMTP_PASSWORD = self.smtp_password
+        settings.ALERT_EMAIL_RECIPIENT = self.alert_email_recipient
+
+        import os
+        os.environ["ALERT_EMAIL_RECIPIENT"] = self.alert_email_recipient
+        os.environ["SMTP_USER"] = self.smtp_user
+        os.environ["SMTP_HOST"] = self.smtp_host
+        os.environ["SMTP_PORT"] = str(self.smtp_port)
+        os.environ["SMTP_PASSWORD"] = str(self.smtp_password)
+        os.environ["EMAIL_ENABLED"] = str(self.email_enabled).lower()
+        os.environ["WEBHOOK_ENABLED"] = str(self.webhook_enabled).lower()
+        os.environ["WEBHOOK_URL"] = self.webhook_url
+        os.environ["WEBHOOK_PROVIDER"] = self.webhook_provider
+
+        self._persist_to_env()
+
+    def _persist_to_env(self):
+        """Persists current notification configuration to backend/.env and workspace root .env file."""
+        import os
+        try:
+            backend_dir = os.path.dirname(os.path.dirname(__file__))
+            workspace_dir = os.path.dirname(backend_dir)
+            target_env_paths = [
+                os.path.join(backend_dir, ".env"),
+                os.path.join(workspace_dir, ".env")
+            ]
+
+            key_map = {
+                "WEBHOOK_ENABLED": str(self.webhook_enabled).lower(),
+                "WEBHOOK_URL": self.webhook_url,
+                "WEBHOOK_PROVIDER": self.webhook_provider,
+                "EMAIL_ENABLED": str(self.email_enabled).lower(),
+                "SMTP_HOST": self.smtp_host,
+                "SMTP_PORT": str(self.smtp_port),
+                "SMTP_USER": self.smtp_user,
+                "SMTP_PASSWORD": self.smtp_password,
+                "ALERT_EMAIL_RECIPIENT": self.alert_email_recipient,
+            }
+
+            for env_path in target_env_paths:
+                env_lines = []
+                if os.path.exists(env_path):
+                    with open(env_path, "r", encoding="utf-8") as f:
+                        env_lines = f.readlines()
+
+                updated_keys = set()
+                new_lines = []
+                for line in env_lines:
+                    stripped = line.strip()
+                    if "=" in stripped and not stripped.startswith("#"):
+                        k, _ = stripped.split("=", 1)
+                        k = k.strip()
+                        if k in key_map:
+                            new_lines.append(f"{k}={key_map[k]}\n")
+                            updated_keys.add(k)
+                            continue
+                    new_lines.append(line)
+
+                for k, v in key_map.items():
+                    if k not in updated_keys:
+                        new_lines.append(f"{k}={key_map[k]}\n")
+
+                with open(env_path, "w", encoding="utf-8") as f:
+                    f.writelines(new_lines)
+
+            logger.info("Successfully persisted notification config to .env file(s).")
+        except Exception as e:
+            logger.error(f"Failed to persist config to .env: {e}")
+
     async def send_alert_if_eligible(self, risk_score: float, anomaly_id: int, root_cause_chain: Optional[Any] = None) -> bool:
         """
         Evaluates whether an alert notification should be dispatched based on cooldown.

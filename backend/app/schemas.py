@@ -124,4 +124,30 @@ class TestAlertResponse(BaseModel):
     message: str
     timestamp: datetime.datetime
 
+# Agent Schemas
+class AgentStatusResponse(BaseModel):
+    is_running: bool
+    source_type: str
+    source_target: str
+    poll_interval: float
+    total_ingested: int
+    uptime_seconds: float
+    last_log_timestamp: Optional[str] = None
+    error_count: int
+    last_error: Optional[str] = None
+    platform: str
+    host_name: str
+
+class AgentStartRequest(BaseModel):
+    source_type: str = Field(default="synthetic", example="windows_events", description="synthetic, windows_events, or file_tail")
+    source_target: str = Field(default="System", example="Security", description="Log channel or file path")
+    poll_interval: Optional[float] = Field(default=2.0, ge=0.5, le=30.0)
+
+class AgentSourcesResponse(BaseModel):
+    platform: str
+    is_windows: bool
+    windows_channels: List[str]
+    suggested_file_paths: List[str]
+
+
 

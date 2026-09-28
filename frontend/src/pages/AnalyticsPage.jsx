@@ -127,7 +127,15 @@ export default function AnalyticsPage({ chartData, logs }) {
             </span>
           </div>
 
-          <div className="h-64 w-full flex items-center justify-center">
+          <div className="h-64 w-full flex items-center justify-center relative">
+            {/* Donut Hole Center Stat */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-6">
+              <span className="text-base font-bold text-white font-mono drop-shadow">
+                {severityData.reduce((acc, curr) => acc + (curr.value || 0), 0)}
+              </span>
+              <span className="text-[10px] font-mono text-cyan-400 font-semibold uppercase">Total Logs</span>
+            </div>
+
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -138,6 +146,27 @@ export default function AnalyticsPage({ chartData, logs }) {
                   outerRadius={85}
                   paddingAngle={4}
                   dataKey="value"
+                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, name, value }) => {
+                    if (percent < 0.04) return null;
+                    const RADIAN = Math.PI / 180;
+                    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+                    return (
+                      <text
+                        x={x}
+                        y={y}
+                        fill="#FFFFFF"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        style={{ fontSize: '11px', fontWeight: 'bold', fontFamily: 'monospace', filter: 'drop-shadow(0px 1px 3px rgba(0,0,0,0.95))' }}
+                      >
+                        {`${name}: ${value}`}
+                      </text>
+                    );
+                  }}
+                  labelLine={false}
                 >
                   {severityData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -147,7 +176,7 @@ export default function AnalyticsPage({ chartData, logs }) {
                   contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
                 />
                 <Legend
-                  formatter={(value) => <span className="text-xs font-mono text-gray-300">{value}</span>}
+                  formatter={(value) => <span className="text-xs font-mono text-gray-300 font-bold">{value}</span>}
                 />
               </PieChart>
             </ResponsiveContainer>

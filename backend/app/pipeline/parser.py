@@ -63,6 +63,11 @@ class LogParser:
             
         return self._fallback_templates[masked_msg], masked_msg
 
+    def parse_line(self, raw_message: str) -> int:
+        """Helper method returning template_id integer for raw log line."""
+        template_id, _ = self.parse(raw_message)
+        return template_id
+
     def _clean_message(self, message: str) -> str:
         # Strip timestamps if present at start of message
         cleaned = re.sub(r'^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d+)?\s*', '', message)

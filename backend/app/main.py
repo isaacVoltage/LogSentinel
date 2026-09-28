@@ -22,13 +22,15 @@ from app.schemas import (
     MetricsResponse, WebSocketMessage,
     AttackSimulationRequest, AttackSimulationResponse,
     AnomalyFeedbackRequest, FalsePositiveRuleResponse,
-    AlertConfigSchema, TestWebhookRequest, TestEmailRequest, TestAlertResponse
+    AlertConfigSchema, TestWebhookRequest, TestEmailRequest, TestAlertResponse,
+    AgentStatusResponse, AgentStartRequest, AgentSourcesResponse
 )
 from app.pipeline.parser import parser_instance
 from app.pipeline.windowing import windowing_instance
 from app.ml.scorer import scorer_instance
 from app.ml.train import train_model
 from app.notifier import notifier_instance
+from app.agent import collector_instance
 
 # FastAPI Application
 app = FastAPI(
@@ -92,10 +94,93 @@ class ConnectionManager:
 
 ws_manager = ConnectionManager()
 
+# Agent Ingestion Callback
+async def handle_agent_log_ingest(raw_message: str, severity: str, block_id: str, timestamp: Optional[datetime.datetime] = None):
+    """Callback for logs captured by OSLogCollector agent."""
+    tracker.record_ingest()
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        template_id = parser_instance.parse_line(raw_message)
+        window_seq = windowing_instance.add_log(block_id, template_id, raw_message)
+        
+        risk_score, root_cause_chain, shap_summary = scorer_instance.score_sequence(
+            window_seq, 
+            severity=severity, 
+            raw_message=raw_message
+        )
+        is_anomaly = risk_score >= settings.RISK_THRESHOLD
+
+        log_entry = LogEntry(
+            timestamp=timestamp or datetime.datetime.utcnow(),
+            raw_message=raw_message,
+            template_id=template_id,
+            block_id=block_id,
+            severity=severity.upper() if severity else "INFO",
+            is_anomaly=is_anomaly,
+            risk_score=risk_score
+        )
+        db.add(log_entry)
+        await db.flush()
+        await db.refresh(log_entry)
+        
+        anomaly_record_data = None
+        if is_anomaly:
+            if log_entry.severity not in ["ERROR", "CRITICAL", "FATAL"]:
+                log_entry.severity = "CRITICAL" if risk_score > 85.0 else "WARNING"
+                
+            anomaly = AnomalyRecord(
+                timestamp=log_entry.timestamp,
+                risk_score=risk_score,
+                status="ACTIVE",
+                root_cause_chain=root_cause_chain,
+                is_acknowledged=False
+            )
+            db.add(anomaly)
+            await db.flush()
+            await db.refresh(anomaly)
+            
+            await notifier_instance.send_alert_if_eligible(risk_score, anomaly.id, root_cause_chain)
+            
+            anomaly_record_data = {
+                "id": anomaly.id,
+                "timestamp": anomaly.timestamp.isoformat(),
+                "risk_score": anomaly.risk_score,
+                "status": anomaly.status,
+                "root_cause_chain": anomaly.root_cause_chain,
+                "is_acknowledged": anomaly.is_acknowledged
+            }
+
+        await db.commit()
+
+        log_response_data = {
+            "id": log_entry.id,
+            "timestamp": log_entry.timestamp.isoformat(),
+            "raw_message": log_entry.raw_message,
+            "template_id": log_entry.template_id,
+            "block_id": log_entry.block_id,
+            "severity": log_entry.severity,
+            "is_anomaly": log_entry.is_anomaly,
+            "risk_score": log_entry.risk_score
+        }
+
+        asyncio.create_task(ws_manager.broadcast({
+            "type": "log_entry",
+            "data": log_response_data
+        }))
+        
+        if is_anomaly and anomaly_record_data:
+            asyncio.create_task(ws_manager.broadcast({
+                "type": "anomaly_alert",
+                "data": anomaly_record_data
+            }))
+
 # Lifecycle Startup Event
 @app.on_event("startup")
 async def on_startup():
     await init_db()
+    # Register OS agent ingestion handler
+    collector_instance.register_callback(handle_agent_log_ingest)
+
     # Pre-train model if weights file doesn't exist yet
     if not scorer_instance.is_loaded:
         asyncio.create_task(asyncio.to_thread(train_model))
@@ -854,5 +939,31 @@ async def test_email_alert(payload: TestEmailRequest):
             status_code=400,
             detail="Failed to send test email via SMTP. Check SMTP credentials, port, and security settings."
         )
+
+# Real-Time OS Log Collector Agent Endpoints
+@app.get("/api/agent/status", response_model=AgentStatusResponse)
+async def get_agent_status():
+    """Get the current live status and metrics of the OS collector agent."""
+    return collector_instance.get_status()
+
+@app.get("/api/agent/sources", response_model=AgentSourcesResponse)
+async def get_agent_sources():
+    """Detect and return available host operating system log channels and file paths."""
+    return collector_instance.get_available_sources()
+
+@app.post("/api/agent/start", response_model=AgentStatusResponse)
+async def start_agent(request: AgentStartRequest):
+    """Start the real-time OS log collector agent with chosen source type and target."""
+    return await collector_instance.start(
+        source_type=request.source_type,
+        source_target=request.source_target,
+        poll_interval=request.poll_interval
+    )
+
+@app.post("/api/agent/stop", response_model=AgentStatusResponse)
+async def stop_agent():
+    """Stop the running real-time OS log collector agent."""
+    return await collector_instance.stop()
+
 
 

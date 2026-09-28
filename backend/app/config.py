@@ -27,19 +27,25 @@ class Settings(BaseSettings):
     WEBHOOK_URL: str = os.getenv("WEBHOOK_URL", "")
     WEBHOOK_PROVIDER: str = os.getenv("WEBHOOK_PROVIDER", "discord") # discord, slack, generic
     
-    EMAIL_ENABLED: bool = os.getenv("EMAIL_ENABLED", "false").lower() in ("true", "1", "t")
+    EMAIL_ENABLED: bool = os.getenv("EMAIL_ENABLED", "true").lower() in ("true", "1", "t")
     SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
-    SMTP_USER: str = os.getenv("SMTP_USER", "")
-    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
-    ALERT_EMAIL_RECIPIENT: str = os.getenv("ALERT_EMAIL_RECIPIENT", "secops-alerts@logsentinel.com")
+    SMTP_USER: str = os.getenv("SMTP_USER", "prateekcapi@gmail.com")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "rhczfhijrvfbriae")
+    SMTP_FROM_EMAIL: str = os.getenv("SMTP_FROM_EMAIL", "prateekcapi@gmail.com")
+    ALERT_EMAIL_RECIPIENT: str = os.getenv("ALERT_EMAIL_RECIPIENT", "prateekcapi@gmail.com")
 
     # CORS Origins
     CORS_ORIGINS: list[str] = ["*"]
 
     class Config:
         case_sensitive = True
-        env_file = ".env"
+        extra = "ignore"
+        env_file = [
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"),
+            ".env"
+        ]
 
 
 settings = Settings()
+

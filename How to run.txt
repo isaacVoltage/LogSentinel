@@ -1,0 +1,15 @@
+go to powershell
+
+Write-EventLog -LogName "Application" -Source "Application Error" -EventID 9999 -EntryType Error -Message "CRITICAL SYSTEM SECURITY BREACH: Privilege Escalation detected on host. Process malware_payload.exe attempted unauthorized kernel memory injection."
+
+
+
+go to PS
+
+net use \\localhost\C$ /user:fake_admin WrongPass123!
+
+go to cmd
+
+runas /user:FakeUserAdminBadPass cmd.exe
+
+d:\Major project\custom_test_with_anomalies.log
