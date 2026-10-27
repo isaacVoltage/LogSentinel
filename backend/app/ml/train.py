@@ -10,17 +10,20 @@ from app.dataset_loader import load_real_dataset_dataframe
 
 logger = logging.getLogger("logsentinel.train")
 
-def load_real_log_sequences(seq_len: int = 10, vocab_size: int = 500) -> torch.Tensor:
+def load_real_log_sequences(seq_len: int = 10, vocab_size: int = 500, dataset_file: str = None) -> torch.Tensor:
     """
-    Loads authentic HDFS log dataset, parses log templates using LogParser,
+    Loads authentic log dataset, parses log templates using LogParser,
     and groups template IDs by Block ID into sequence windows for LSTM Autoencoder training.
     """
-    df = load_real_dataset_dataframe()
+    df = load_real_dataset_dataframe(file_name=dataset_file)
     if df.empty:
         logger.warning("Real dataset DataFrame is empty. Falling back to synthetic sequences.")
         return generate_synthetic_normal_sequences(num_samples=500, seq_len=seq_len, vocab_size=vocab_size)
 
-    logger.info(f"Building ML sequence windows from {len(df)} real HDFS log records...")
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "dataset"))
+    active_name = dataset_file or ("BGL_2k.log_structured.csv" if os.path.exists(os.path.join(base_dir, "BGL_2k.log_structured.csv")) else "Windows_2k.log_structured.csv" if os.path.exists(os.path.join(base_dir, "Windows_2k.log_structured.csv")) else "hdfs_logs.csv")
+    
+    logger.info(f"Building ML sequence windows from {len(df)} records in dataset [{active_name}]...")
 
     # Group template IDs by Block_ID or Component
     block_sequences = {}
@@ -93,14 +96,15 @@ def train_model(
     batch_size: int = 32,
     learning_rate: float = 0.005,
     vocab_size: int = 500,
-    seq_len: int = 10
+    seq_len: int = 10,
+    dataset_file: str = None
 ):
     os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = LSTMAutoencoder(vocab_size=vocab_size, sequence_length=seq_len).to(device)
     
-    dataset = load_real_log_sequences(seq_len=seq_len, vocab_size=vocab_size)
+    dataset = load_real_log_sequences(seq_len=seq_len, vocab_size=vocab_size, dataset_file=dataset_file)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     

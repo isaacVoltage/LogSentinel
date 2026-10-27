@@ -1,13 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Cpu, ThumbsDown, FileText, FileSpreadsheet, Download, Sliders, CheckCircle2, ShieldCheck, Activity, Bell, Send, Mail, Globe, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Cpu, ThumbsDown, FileText, FileSpreadsheet, Download, Sliders, CheckCircle2, ShieldCheck, Activity, Bell, Send, Mail, Globe, Check, AlertCircle, Loader2, Palette, Monitor, Sparkles } from 'lucide-react';
 import AgentControlPanel from '../components/AgentControlPanel';
+import ThemeFontCustomizer from '../components/ThemeFontCustomizer';
 
 export default function SettingsPage({
   isTraining,
   handleTrainModel,
   setIsRulesOpen,
   isConnected,
-  metrics
+  metrics,
+  currentTheme = 'cyberpunk',
+  onThemeChange,
+  currentSans,
+  onChangeSans,
+  currentMono,
+  onChangeMono,
+  currentSize,
+  onChangeSize,
+  currentWeight,
+  onChangeWeight,
+  onResetDefaults
 }) {
   // Alert Config State with localStorage fallback
   const [alertConfig, setAlertConfig] = useState(() => {
@@ -149,6 +161,40 @@ export default function SettingsPage({
             Configure Drain3 parsing, trigger PyTorch LSTM retraining, manage FP suppression rules, and set up Webhook & Email alerts.
           </p>
         </div>
+      </div>
+
+      {/* Dashboard Theme & Typography Studio */}
+      <div className="glass-panel p-6 rounded-2xl border border-cyber-purple/30 bg-dark-900/80 space-y-4">
+        <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
+          <div className="p-2.5 rounded-xl bg-gradient-to-tr from-cyber-blue/20 to-cyber-purple/20 border border-cyber-purple/30 text-cyber-purple">
+            <Palette className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white font-mono tracking-wide flex items-center gap-2">
+              <span>Theme, Light Mode & Font Customizer</span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyber-purple/10 text-cyber-purple border border-cyber-purple/30 font-normal">
+                Personalization
+              </span>
+            </h3>
+            <p className="text-xs text-gray-400 font-mono mt-0.5">
+              Switch visual color themes (including 3 crisp light modes), customize UI fonts, and adjust console terminal fonts.
+            </p>
+          </div>
+        </div>
+
+        <ThemeFontCustomizer
+          currentTheme={currentTheme}
+          currentSans={currentSans}
+          currentMono={currentMono}
+          currentSize={currentSize}
+          currentWeight={currentWeight}
+          onChangeTheme={onThemeChange}
+          onChangeSans={onChangeSans}
+          onChangeMono={onChangeMono}
+          onChangeSize={onChangeSize}
+          onChangeWeight={onChangeWeight}
+          onResetDefaults={onResetDefaults}
+        />
       </div>
 
       {/* SecOps Incident Alert & Notification Channels Card */}

@@ -25,6 +25,7 @@ class AnomalyRecord(Base):
     is_acknowledged = Column(Boolean, default=False, index=True)
     acknowledged_at = Column(DateTime, nullable=True)
     feedback_notes = Column(Text, nullable=True)
+    copilot_analysis = Column(JSON, nullable=True)
 
 class FalsePositiveRule(Base):
     __tablename__ = "false_positive_rules"

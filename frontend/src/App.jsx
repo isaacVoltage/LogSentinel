@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, NavLink } from 'react-router-dom';
-import { Shield, LayoutDashboard, Terminal, ShieldAlert, Sliders, AlertTriangle, AlertCircle, BarChart3 } from 'lucide-react';
+import { Shield, LayoutDashboard, Terminal, ShieldAlert, Sliders, AlertTriangle, AlertCircle, BarChart3, Palette, Sun, Moon, Type } from 'lucide-react';
 
 import DashboardPage from './pages/DashboardPage';
 import LiveLogsPage from './pages/LiveLogsPage';
@@ -11,6 +11,8 @@ import SettingsPage from './pages/SettingsPage';
 import AnomalyDetailModal from './components/AnomalyDetailModal';
 import AttackScenarioInjector from './components/AttackScenarioInjector';
 import FalsePositiveRulesModal from './components/FalsePositiveRulesModal';
+import ThemeFontModal from './components/ThemeFontModal';
+import { applyThemeAndFontSettings } from './utils/themeConfig';
 
 export default function App() {
   const [metrics, setMetrics] = useState({
@@ -30,6 +32,36 @@ export default function App() {
   const [isTraining, setIsTraining] = useState(false);
   const [attackToast, setAttackToast] = useState(null);
   const [isRulesOpen, setIsRulesOpen] = useState(false);
+  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
+
+  // Appearance & Typography States
+  const [theme, setTheme] = useState(() => localStorage.getItem('logsentinel_theme') || 'cyberpunk');
+  const [fontSans, setFontSans] = useState(() => localStorage.getItem('logsentinel_font_sans') || 'Inter');
+  const [fontMono, setFontMono] = useState(() => localStorage.getItem('logsentinel_font_mono') || 'JetBrains Mono');
+  const [fontSize, setFontSize] = useState(() => localStorage.getItem('logsentinel_font_size') || 'normal');
+  const [fontWeight, setFontWeight] = useState(() => localStorage.getItem('logsentinel_font_weight') || 'normal');
+
+  useEffect(() => {
+    applyThemeAndFontSettings({ theme, fontSans, fontMono, fontSize, fontWeight });
+  }, [theme, fontSans, fontMono, fontSize, fontWeight]);
+
+  const handleResetDefaults = () => {
+    setTheme('cyberpunk');
+    setFontSans('Inter');
+    setFontMono('JetBrains Mono');
+    setFontSize('normal');
+    setFontWeight('normal');
+  };
+
+  const isLightMode = theme.startsWith('light-');
+
+  const handleQuickToggleTheme = () => {
+    if (isLightMode) {
+      setTheme('cyberpunk');
+    } else {
+      setTheme('light-clean');
+    }
+  };
 
   const socketRef = useRef(null);
 
@@ -194,7 +226,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen pb-12 bg-dark-950 text-gray-100 font-sans">
+    <div className={`min-h-screen pb-12 font-sans transition-colors duration-200 ${
+      isLightMode ? 'bg-transparent text-slate-800' : 'bg-dark-950 text-gray-100'
+    }`}>
       {/* Top Header Navbar */}
       <header className="glass-panel sticky top-0 z-40 border-b border-gray-800 bg-dark-900/90 backdrop-blur-md px-6 py-3.5">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
@@ -291,7 +325,33 @@ export default function App() {
           </nav>
 
           {/* Controls & Connection Indicator */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            {/* Quick 1-Click Light/Dark Toggle */}
+            <button
+              type="button"
+              onClick={handleQuickToggleTheme}
+              className="p-1.5 px-2.5 rounded-xl bg-dark-950 border border-gray-800 text-gray-300 hover:text-white hover:border-gray-700 transition-all flex items-center gap-1.5 text-xs font-mono shadow-sm"
+              title={isLightMode ? 'Switch to Dark Mode (Cyberpunk)' : 'Switch to Light Mode (Arctic Clean)'}
+            >
+              {isLightMode ? (
+                <Moon className="w-3.5 h-3.5 text-cyber-purple shrink-0" />
+              ) : (
+                <Sun className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              )}
+              <span className="hidden sm:inline font-semibold">{isLightMode ? 'Dark' : 'Light'}</span>
+            </button>
+
+            {/* Full Theme & Font Customizer Modal Trigger */}
+            <button
+              type="button"
+              onClick={() => setIsCustomizerOpen(true)}
+              className="p-1.5 px-2.5 rounded-xl bg-dark-950 border border-gray-800 text-gray-300 hover:text-cyber-blue hover:border-cyber-blue/40 transition-all flex items-center gap-1.5 text-xs font-mono shadow-sm"
+              title="Open Theme & Font Customizer Studio"
+            >
+              <Palette className="w-3.5 h-3.5 text-cyber-blue shrink-0" />
+              <span className="hidden md:inline font-semibold">Themes & Fonts</span>
+            </button>
+
             <AttackScenarioInjector onAttackTriggered={handleAttackTriggered} />
 
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-dark-950 border border-gray-800 text-xs font-mono">
@@ -421,6 +481,17 @@ export default function App() {
                 setIsRulesOpen={setIsRulesOpen}
                 isConnected={isConnected}
                 metrics={metrics}
+                currentTheme={theme}
+                onThemeChange={setTheme}
+                currentSans={fontSans}
+                onChangeSans={setFontSans}
+                currentMono={fontMono}
+                onChangeMono={setFontMono}
+                currentSize={fontSize}
+                onChangeSize={setFontSize}
+                currentWeight={fontWeight}
+                onChangeWeight={setFontWeight}
+                onResetDefaults={handleResetDefaults}
               />
             }
           />
@@ -438,6 +509,23 @@ export default function App() {
       <FalsePositiveRulesModal
         isOpen={isRulesOpen}
         onClose={() => setIsRulesOpen(false)}
+      />
+
+      {/* Theme, Light Mode & Font Customizer Modal */}
+      <ThemeFontModal
+        isOpen={isCustomizerOpen}
+        onClose={() => setIsCustomizerOpen(false)}
+        currentTheme={theme}
+        currentSans={fontSans}
+        currentMono={fontMono}
+        currentSize={fontSize}
+        currentWeight={fontWeight}
+        onChangeTheme={setTheme}
+        onChangeSans={setFontSans}
+        onChangeMono={setFontMono}
+        onChangeSize={setFontSize}
+        onChangeWeight={setFontWeight}
+        onResetDefaults={handleResetDefaults}
       />
     </div>
   );

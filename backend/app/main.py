@@ -23,7 +23,8 @@ from app.schemas import (
     AttackSimulationRequest, AttackSimulationResponse,
     AnomalyFeedbackRequest, FalsePositiveRuleResponse,
     AlertConfigSchema, TestWebhookRequest, TestEmailRequest, TestAlertResponse,
-    AgentStatusResponse, AgentStartRequest, AgentSourcesResponse
+    AgentStatusResponse, AgentStartRequest, AgentSourcesResponse,
+    CopilotAnalysisResponse, CopilotChatRequest, CopilotChatResponse
 )
 from app.pipeline.parser import parser_instance
 from app.pipeline.windowing import windowing_instance
@@ -31,6 +32,7 @@ from app.ml.scorer import scorer_instance
 from app.ml.train import train_model
 from app.notifier import notifier_instance
 from app.agent import collector_instance
+from app.copilot import copilot_instance
 
 # FastAPI Application
 app = FastAPI(
@@ -964,6 +966,95 @@ async def start_agent(request: AgentStartRequest):
 async def stop_agent():
     """Stop the running real-time OS log collector agent."""
     return await collector_instance.stop()
+
+# ===========================================================================
+# 🤖 AI Security Copilot & Automated Remediation Endpoints
+# ===========================================================================
+
+@app.get("/api/copilot/status")
+async def get_copilot_status():
+    """Returns AI Copilot status and active provider."""
+    gemini_active = bool(copilot_instance.gemini_key)
+    openai_active = bool(copilot_instance.openai_key)
+    
+    active_engine = "LogSentinel Cyber Reasoner (Built-In)"
+    if gemini_active:
+        active_engine = "Google Gemini 1.5 Flash (Hybrid)"
+    elif openai_active:
+        active_engine = "OpenAI GPT-4o Mini (Hybrid)"
+
+    return {
+        "status": "ready",
+        "active_engine": active_engine,
+        "gemini_configured": gemini_active,
+        "openai_configured": openai_active,
+        "mitre_matrix_version": "v14.1",
+        "supported_frameworks": ["MITRE ATT&CK", "NIST CSF", "CIS Controls"]
+    }
+
+@app.get("/api/copilot/analyze/{anomaly_id}", response_model=CopilotAnalysisResponse)
+async def get_or_create_copilot_analysis(anomaly_id: int, db: AsyncSession = Depends(get_db)):
+    """Fetch existing Copilot analysis or generate new one for anomaly."""
+    res = await db.execute(select(AnomalyRecord).where(AnomalyRecord.id == anomaly_id))
+    anomaly = res.scalar_one_or_none()
+    if not anomaly:
+        raise HTTPException(status_code=404, detail=f"Anomaly #{anomaly_id} not found.")
+
+    if anomaly.copilot_analysis:
+        return anomaly.copilot_analysis
+
+    # Generate new analysis
+    analysis = await copilot_instance.analyze_anomaly(
+        anomaly_id=anomaly.id,
+        risk_score=anomaly.risk_score,
+        root_cause_chain=anomaly.root_cause_chain,
+        custom_notes=anomaly.feedback_notes
+    )
+    anomaly.copilot_analysis = analysis
+    await db.commit()
+
+    return analysis
+
+@app.post("/api/copilot/analyze/{anomaly_id}", response_model=CopilotAnalysisResponse)
+async def regenerate_copilot_analysis(anomaly_id: int, db: AsyncSession = Depends(get_db)):
+    """Force regenerate Copilot analysis for anomaly."""
+    res = await db.execute(select(AnomalyRecord).where(AnomalyRecord.id == anomaly_id))
+    anomaly = res.scalar_one_or_none()
+    if not anomaly:
+        raise HTTPException(status_code=404, detail=f"Anomaly #{anomaly_id} not found.")
+
+    analysis = await copilot_instance.analyze_anomaly(
+        anomaly_id=anomaly.id,
+        risk_score=anomaly.risk_score,
+        root_cause_chain=anomaly.root_cause_chain,
+        custom_notes=anomaly.feedback_notes
+    )
+    anomaly.copilot_analysis = analysis
+    await db.commit()
+
+    return analysis
+
+@app.post("/api/copilot/chat", response_model=CopilotChatResponse)
+async def copilot_chat(payload: CopilotChatRequest, db: AsyncSession = Depends(get_db)):
+    """Interactive SOC incident investigation chat."""
+    res = await db.execute(select(AnomalyRecord).where(AnomalyRecord.id == payload.anomaly_id))
+    anomaly = res.scalar_one_or_none()
+    if not anomaly:
+        raise HTTPException(status_code=404, detail=f"Anomaly #{payload.anomaly_id} not found.")
+
+    context = anomaly.copilot_analysis or await copilot_instance.analyze_anomaly(
+        anomaly_id=anomaly.id,
+        risk_score=anomaly.risk_score,
+        root_cause_chain=anomaly.root_cause_chain
+    )
+
+    chat_res = await copilot_instance.chat(
+        anomaly_id=payload.anomaly_id,
+        question=payload.question,
+        context=context,
+        history=payload.chat_history
+    )
+    return chat_res
 
 
 

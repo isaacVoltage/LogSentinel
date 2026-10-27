@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { X, AlertTriangle, CheckCircle, Cpu, Layers, ThumbsDown, ShieldAlert, BarChart3, Activity } from 'lucide-react';
+import { X, AlertTriangle, CheckCircle, Cpu, Layers, ThumbsDown, ShieldAlert, BarChart3, Activity, Bot, Sparkles } from 'lucide-react';
+import AICopilotPanel from './AICopilotPanel';
 
 export default function AnomalyDetailModal({ anomaly, onClose, onAcknowledge }) {
-  const [activeTab, setActiveTab] = useState('shap'); // 'shap' or 'root_cause'
+  const [activeTab, setActiveTab] = useState('copilot'); // 'copilot', 'shap' or 'root_cause'
   const [feedbackNotes, setFeedbackNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackStatus, setFeedbackStatus] = useState(anomaly?.status || 'ACTIVE');
@@ -129,7 +130,20 @@ export default function AnomalyDetailModal({ anomaly, onClose, onAcknowledge }) 
           </div>
 
           {/* Analysis View Switcher Tabs */}
-          <div className="flex items-center gap-2 border-b border-gray-800 pb-3">
+          <div className="flex items-center gap-2 border-b border-gray-800 pb-3 flex-wrap">
+            <button
+              onClick={() => setActiveTab('copilot')}
+              className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all ${
+                activeTab === 'copilot'
+                  ? 'bg-gradient-to-r from-cyber-blue/25 to-indigo-600/30 text-white border border-cyber-blue/60 shadow-lg shadow-cyber-blue/10'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Bot className="w-4 h-4 text-cyber-blue animate-pulse" />
+              <span>AI Security Copilot &amp; Remediation</span>
+              <span className="text-[10px] bg-cyber-blue/20 text-cyber-blue px-1.5 py-0.5 rounded font-bold">GEN-AI</span>
+            </button>
+
             <button
               onClick={() => setActiveTab('shap')}
               className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all ${
@@ -154,6 +168,11 @@ export default function AnomalyDetailModal({ anomaly, onClose, onAcknowledge }) 
               <span>Reconstruction Loss Chain</span>
             </button>
           </div>
+
+          {/* 0. AI Security Copilot & Automated Remediation */}
+          {activeTab === 'copilot' && (
+            <AICopilotPanel anomaly={anomaly} />
+          )}
 
           {/* 1. SHAP Feature Attribution Visualization */}
           {activeTab === 'shap' && (

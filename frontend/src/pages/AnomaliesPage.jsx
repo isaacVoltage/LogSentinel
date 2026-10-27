@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ComparisonPanel from '../components/ComparisonPanel';
-import { ShieldAlert, AlertTriangle, CheckCircle2, Search, Eye, Trash2 } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, CheckCircle2, Search, Eye, Trash2, Bot } from 'lucide-react';
 
 export default function AnomaliesPage({ anomalies, onSelectAnomaly, onAcknowledge, onClearAllAnomalies }) {
   const [filter, setFilter] = useState('ALL');
@@ -162,12 +162,21 @@ export default function AnomaliesPage({ anomalies, onSelectAnomaly, onAcknowledg
                       )}
                     </td>
                     <td className="py-3 px-4 text-right whitespace-nowrap">
-                      <button
-                        onClick={() => onSelectAnomaly(anom)}
-                        className="px-2.5 py-1 rounded-lg bg-cyber-blue/10 hover:bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/30 text-[11px] flex items-center gap-1 ml-auto"
-                      >
-                        <Eye className="w-3 h-3" /> Inspect
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => onSelectAnomaly(anom)}
+                          className="px-2 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 text-[11px] font-bold flex items-center gap-1 transition-all"
+                          title="Open AI Security Copilot Incident Diagnosis"
+                        >
+                          <Bot className="w-3 h-3 text-indigo-400" /> Copilot
+                        </button>
+                        <button
+                          onClick={() => onSelectAnomaly(anom)}
+                          className="px-2 py-1 rounded-lg bg-cyber-blue/10 hover:bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/30 text-[11px] flex items-center gap-1 transition-all"
+                        >
+                          <Eye className="w-3 h-3" /> Inspect
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

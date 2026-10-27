@@ -39,9 +39,53 @@ class AnomalyRecordResponse(BaseModel):
     is_acknowledged: bool
     acknowledged_at: Optional[datetime.datetime] = None
     feedback_notes: Optional[str] = None
+    copilot_analysis: Optional[Dict[str, Any]] = None
 
     class Config:
         from_attributes = True
+
+# AI Security Copilot Schemas
+class MitreTechnique(BaseModel):
+    id: str
+    tactic: str
+    name: str
+    description: str
+    confidence: float
+
+class RemediationAction(BaseModel):
+    step: int
+    title: str
+    action: str
+    command: Optional[str] = None
+    os_target: Optional[str] = "windows"
+
+class CopilotAnalysisResponse(BaseModel):
+    anomaly_id: int
+    threat_category: str
+    severity_level: str
+    confidence_score: float
+    executive_summary: str
+    technical_root_cause: str
+    blast_radius: str
+    mitre_attack: List[MitreTechnique]
+    remediation_steps: List[RemediationAction]
+    windows_commands: List[str]
+    linux_commands: List[str]
+    entities_extracted: Optional[Dict[str, Any]] = None
+    ai_provider_used: str
+    generated_at: str
+
+class CopilotChatRequest(BaseModel):
+    anomaly_id: int
+    question: str
+    chat_history: Optional[List[Dict[str, str]]] = None
+
+class CopilotChatResponse(BaseModel):
+    anomaly_id: int
+    answer: str
+    suggested_commands: Optional[List[str]] = None
+    provider_used: str
+    timestamp: str
 
 class AnomalyAcknowledgeResponse(BaseModel):
     id: int

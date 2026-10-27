@@ -13,3 +13,11 @@ go to cmd
 runas /user:FakeUserAdminBadPass cmd.exe
 
 d:\Major project\custom_test_with_anomalies.log
+
+Write-EventLog -LogName "Application" -Source "Application Error" -EventID 9999 -EntryType Error -Message "CRITICAL SYSTEM SECURITY BREACH: Privilege Escalation detected on host. Process malware_payload.exe attempted unauthorized kernel memory injection."
+
+
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+npm run dev
+
+

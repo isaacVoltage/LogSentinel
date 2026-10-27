@@ -242,6 +242,78 @@ export default function AnalyticsPage({ chartData, logs }) {
         </div>
       </div>
 
+      {/* 5. 24-Hour Incident Anomaly Heatmap Grid */}
+      <div className="glass-panel p-5 rounded-2xl border border-gray-800 bg-dark-900/70 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-white font-mono flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-cyber-purple" />
+              24-Hour Security Incident Heatmap Grid (Hour vs. Day)
+            </h3>
+            <p className="text-xs text-gray-400 font-mono mt-0.5">
+              Anomaly frequency matrix mapping threat intensity by hour of day (00:00 - 23:00).
+            </p>
+          </div>
+          <div className="flex items-center gap-2 font-mono text-[10px] text-gray-400">
+            <span>Low Intensity</span>
+            <div className="flex gap-1">
+              <span className="w-3 h-3 rounded-sm bg-gray-800 border border-gray-700"></span>
+              <span className="w-3 h-3 rounded-sm bg-cyan-950/80 border border-cyan-700/50"></span>
+              <span className="w-3 h-3 rounded-sm bg-amber-500/40 border border-amber-500"></span>
+              <span className="w-3 h-3 rounded-sm bg-red-500/80 border border-red-500"></span>
+            </div>
+            <span>Critical Burst</span>
+          </div>
+        </div>
+
+        {/* Heatmap Grid */}
+        <div className="overflow-x-auto pb-2">
+          <div className="min-w-[700px] space-y-1.5 font-mono text-xs">
+            {/* Hour Headers */}
+            <div className="grid grid-cols-25 gap-1 items-center text-[10px] text-gray-400 text-center">
+              <span className="text-left font-bold text-gray-500">Day / Hour</span>
+              {Array.from({ length: 24 }).map((_, h) => (
+                <span key={h}>{String(h).padStart(2, '0')}</span>
+              ))}
+            </div>
+
+            {/* Days Rows */}
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, dIdx) => (
+              <div key={day} className="grid grid-cols-25 gap-1 items-center">
+                <span className="text-[11px] font-bold text-gray-300">{day}</span>
+                {Array.from({ length: 24 }).map((_, hIdx) => {
+                  // Deterministic mock seed based on hour/day for realistic SOC heatmap
+                  const val = ((dIdx * 7 + hIdx * 13 + 3) % 100);
+                  let colorClass = "bg-gray-900 border-gray-800/80 hover:border-gray-600";
+                  let intensityLabel = "Normal";
+
+                  if (val > 82) {
+                    colorClass = "bg-red-500/80 border-red-400 text-white shadow-sm shadow-red-500/30";
+                    intensityLabel = "Critical Burst";
+                  } else if (val > 60) {
+                    colorClass = "bg-amber-500/40 border-amber-400/80 text-amber-200";
+                    intensityLabel = "Elevated Risk";
+                  } else if (val > 35) {
+                    colorClass = "bg-cyan-950/80 border-cyan-600/50 text-cyan-300";
+                    intensityLabel = "Low Anomaly";
+                  }
+
+                  return (
+                    <div
+                      key={hIdx}
+                      title={`${day} @ ${String(hIdx).padStart(2, '0')}:00 - ${intensityLabel} (${val} events)`}
+                      className={`h-7 rounded flex items-center justify-center text-[9px] font-bold border transition-all cursor-pointer hover:scale-110 ${colorClass}`}
+                    >
+                      {val > 60 ? val : ''}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Dataset Export & Forensic PDF Download Bar */}
       <div className="glass-panel p-5 rounded-2xl border border-gray-800 bg-dark-900/80 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>

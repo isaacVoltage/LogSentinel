@@ -28,11 +28,14 @@ def load_real_dataset_dataframe(file_name: str = None) -> pd.DataFrame:
     if file_name:
         target_path = os.path.join(base_dir, file_name)
     else:
-        # Check if Windows_2k or other Loghub CSVs exist in dataset/
+        # Check if BGL_2k, Windows_2k, or other Loghub CSVs exist in dataset/
+        bgl_csv = os.path.join(base_dir, "BGL_2k.log_structured.csv")
         win_csv = os.path.join(base_dir, "Windows_2k.log_structured.csv")
         hdfs_csv = os.path.join(base_dir, "hdfs_logs.csv")
         
-        if os.path.exists(win_csv):
+        if os.path.exists(bgl_csv):
+            target_path = bgl_csv
+        elif os.path.exists(win_csv):
             target_path = win_csv
         elif os.path.exists(hdfs_csv):
             target_path = hdfs_csv

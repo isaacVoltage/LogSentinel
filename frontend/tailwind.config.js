@@ -29,6 +29,9 @@ export default {
       animation: {
         'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
+      gridTemplateColumns: {
+        '25': 'repeat(25, minmax(0, 1fr))',
+      },
       keyframes: {
         'pulse-glow': {
           '0%, 100%': { opacity: 1, filter: 'drop-shadow(0 0 15px rgba(255, 0, 85, 0.6))' },
